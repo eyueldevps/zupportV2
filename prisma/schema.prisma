@@ -1,0 +1,305 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPPORTER
+  CREATOR
+  ADMIN
+}
+
+enum PageStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+}
+
+enum VerifStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum PostType {
+  ARTICLE
+  VIDEO
+  FILE
+}
+
+enum PayStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+enum PayPurpose {
+  MEMBERSHIP
+  TIP
+}
+
+enum MemStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  EDITOR
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum TokenType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  emailVerifiedAt DateTime?
+  name            String
+  passwordHash    String
+  phone           String?
+  role            Role           @default(SUPPORTER)
+  locale          String         @default("en")
+  createdAt       DateTime       @default(now())
+  tokens          EmailToken[]
+  pages           CreatorPage[]
+  orgs            OrgMember[]
+  payments        Payment[]
+  memberships     Membership[]
+  follows         Follow[]
+  notifications   Notification[]
+  reports         Report[]
+}
+
+model EmailToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      TokenType
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+}
+
+model Organization {
+  id        String        @id @default(cuid())
+  name      String
+  slug      String        @unique
+  createdAt DateTime      @default(now())
+  members   OrgMember[]
+  pages     CreatorPage[]
+}
+
+model OrgMember {
+  orgId  String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId String
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   OrgRole      @default(EDITOR)
+
+  @@id([orgId, userId])
+}
+
+model Category {
+  id    String        @id @default(cuid())
+  slug  String        @unique
+  name  String
+  icon  String        @default("sparkles")
+  sort  Int           @default(0)
+  pages CreatorPage[]
+}
+
+model CreatorPage {
+  id            String         @id @default(cuid())
+  ownerId       String
+  owner         User           @relation(fields: [ownerId], references: [id])
+  orgId         String?
+  org           Organization?  @relation(fields: [orgId], references: [id])
+  username      String         @unique
+  displayName   String
+  bio           String         @default("")
+  categoryId    String?
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  country       String?
+  avatarUrl     String?
+  bannerUrl     String?
+  links         Json?
+  currency      String         @default("ETB")
+  status        PageStatus     @default(DRAFT)
+  verification  VerifStatus    @default(NONE)
+  featured      Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  tiers         Tier[]
+  posts         Post[]
+  payments      Payment[]
+  memberships   Membership[]
+  follows       Follow[]
+  verifications Verification[]
+  payouts       Payout[]
+  reports       Report[]
+
+  @@index([status, featured])
+}
+
+model Verification {
+  id          String      @id @default(cuid())
+  pageId      String
+  page        CreatorPage @relation(fields: [pageId], references: [id])
+  status      VerifStatus @default(PENDING)
+  phone       String?
+  idDocKey    String?
+  selfieKey   String?
+  submittedAt DateTime    @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  note        String?
+}
+
+model Tier {
+  id          String       @id @default(cuid())
+  pageId      String
+  page        CreatorPage  @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  name        String
+  priceMinor  Int
+  currency    String       @default("ETB")
+  description String       @default("")
+  benefits    String[]
+  sort        Int          @default(0)
+  active      Boolean      @default(true)
+  posts       Post[]
+  payments    Payment[]
+  memberships Membership[]
+}
+
+model Post {
+  id          String      @id @default(cuid())
+  pageId      String
+  page        CreatorPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type        PostType    @default(ARTICLE)
+  title       String
+  excerpt     String      @default("")
+  body        String      @default("")
+  youtubeId   String?
+  fileKey     String?
+  tierId      String?
+  tier        Tier?       @relation(fields: [tierId], references: [id])
+  published   Boolean     @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  reports     Report[]
+
+  @@index([pageId, published, publishedAt])
+}
+
+model Payment {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  pageId       String
+  page         CreatorPage @relation(fields: [pageId], references: [id])
+  purpose      PayPurpose
+  tierId       String?
+  tier         Tier?       @relation(fields: [tierId], references: [id])
+  grossMinor   Int
+  currency     String      @default("ETB")
+  feeBps       Int
+  feeMinor     Int
+  creatorMinor Int
+  provider     String      @default("TELEBIRR_MANUAL")
+  reference    String      @unique
+  providerRef  String?     @unique
+  proofKey     String?
+  status       PayStatus   @default(PENDING)
+  note         String?
+  createdAt    DateTime    @default(now())
+  reviewedAt   DateTime?
+  reviewedBy   String?
+
+  @@index([status, createdAt])
+}
+
+model Membership {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  pageId    String
+  page      CreatorPage @relation(fields: [pageId], references: [id])
+  tierId    String
+  tier      Tier        @relation(fields: [tierId], references: [id])
+  status    MemStatus   @default(ACTIVE)
+  startedAt DateTime    @default(now())
+  expiresAt DateTime
+
+  @@unique([userId, pageId])
+}
+
+model Follow {
+  userId String
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pageId String
+  page   CreatorPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pageId])
+}
+
+model Payout {
+  id          String      @id @default(cuid())
+  pageId      String
+  page        CreatorPage @relation(fields: [pageId], references: [id])
+  amountMinor Int
+  currency    String      @default("ETB")
+  method      String      @default("TELEBIRR_MANUAL")
+  reference   String?
+  status      String      @default("PENDING")
+  createdAt   DateTime    @default(now())
+  paidAt      DateTime?
+}
+
+model Report {
+  id         String       @id @default(cuid())
+  reporterId String?
+  reporter   User?        @relation(fields: [reporterId], references: [id])
+  pageId     String?
+  page       CreatorPage? @relation(fields: [pageId], references: [id])
+  postId     String?
+  post       Post?        @relation(fields: [postId], references: [id])
+  reason     String
+  status     ReportStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+}

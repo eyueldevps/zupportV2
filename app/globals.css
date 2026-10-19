@@ -1,0 +1,22 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+
+/* Light is the default. Dark only applies when the user picks it (html.dark). */
+:root {
+  --background: 248 250 252; --foreground: 15 23 42; --card: 255 255 255;
+  --muted: 241 245 249; --muted-foreground: 100 116 139; --border: 226 232 240;
+  --primary: 37 99 235; --primary-hover: 29 78 216; --primary-foreground: 255 255 255; --link: 37 99 235;
+  --secondary: 5 150 105; --accent: 217 119 6; --danger: 220 38 38;
+}
+.dark {
+  --background: 10 16 30; --foreground: 241 245 249; --card: 17 26 46;
+  --muted: 24 35 58; --muted-foreground: 148 163 184; --border: 38 51 78;
+  --primary: 37 99 235; --primary-hover: 59 130 246; --primary-foreground: 255 255 255; --link: 96 165 250;
+  --secondary: 52 211 153; --accent: 251 191 36; --danger: 248 113 113;
+}
+@layer base { body { @apply bg-background text-foreground antialiased; } a { @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary; } }
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-outline { @apply btn border border-primary bg-transparent text-link hover:bg-muted; }
+  .input { @apply w-full rounded-xl border border-border bg-card px-3 py-2.5 placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30; }
+  .card { @apply rounded-2xl border border-border bg-card; }
+}
