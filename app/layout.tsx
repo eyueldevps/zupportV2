@@ -24,14 +24,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={await getLocale()} className={`${inter.variable} ${ethiopic.variable} ${dark ? "dark" : ""}`}>
       <body className="font-sans">
         <header className="border-b border-border bg-card">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3" aria-label="Main">
+          <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3" aria-label="Main">
             <Link href="/" aria-label="Zupport home"><Logo size={44} /></Link>
-            <div className="flex items-center gap-4 text-sm font-medium">
+            <div className="flex flex-wrap items-center gap-4 text-sm font-medium">
               <Link href="/explore">{t("nav.explore")}</Link>
               <Link href="/#how" className="hidden sm:inline">{t("nav.how")}</Link>
               <Link href="/#faq" className="hidden sm:inline">{t("nav.faq")}</Link>
               {user ? (<>
+                <Link href="/memberships">My support</Link>
                 <Link href="/account">Account</Link>
+                {user.role === "ADMIN" && <Link href="/admin">Admin</Link>}
                 <form action={logout}><button className="text-muted-foreground hover:text-foreground">Log out</button></form>
               </>) : (<>
                 <Link href="/login">Log in</Link>

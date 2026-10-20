@@ -303,3 +303,9 @@ model AuditLog {
   meta      Json?
   createdAt DateTime @default(now())
 }
+model PaymentProof {
+  paymentId String   @id
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+}

@@ -17,6 +17,7 @@ export default async function ManageLayout({ children, params }: { children: Rea
         <Link href={base} className={tab}>Profile</Link>
         <Link href={`${base}/tiers`} className={tab}>Memberships</Link>
         <Link href={`${base}/posts`} className={tab}>Posts</Link>
+        <Link href={`${base}/earnings`} className={tab}>Earnings</Link>
         <Link href="/account" className={`${tab} ml-auto text-muted-foreground`}>All my pages</Link>
       </nav>
       <div className="mt-6">{children}</div>

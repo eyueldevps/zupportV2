@@ -4,6 +4,7 @@ import { BadgeCheck, FileText, Lock, MapPin, PlayCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { getT } from "@/lib/i18n";
 import { money } from "@/lib/format";
+import { allows, getMembership } from "@/lib/access";
 import { currentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -14,9 +15,10 @@ export default async function CreatorPage({ params }: { params: Promise<{ userna
   const user = await currentUser();
   const page = await db.creatorPage.findUnique({ where: { username }, include: { category: true,
     tiers: { where: { active: true }, orderBy: { priceMinor: "asc" } },
-    posts: { where: { published: true }, orderBy: { publishedAt: "desc" }, take: 30 } } });
+    posts: { where: { published: true }, orderBy: { publishedAt: "desc" }, take: 30, include: { tier: true } } } });
   const isOwner = !!user && !!page && page.ownerId === user.id;
-  if (!page || (page.status !== "ACTIVE" && !isOwner)) notFound(); // drafts are visible only to their owner
+  if (!page || (page.status !== "ACTIVE" && !isOwner)) notFound();
+  const member = user ? await getMembership(user.id, page.id) : null;
   const links = Object.entries((page.links ?? {}) as Record<string, string>).filter(([, v]) => v);
   return (
     <div>
@@ -42,7 +44,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ userna
             {page.posts.length === 0 && <p className="mt-3 text-muted-foreground">{t("page.noposts")}</p>}
             <div className="mt-4 space-y-4">
               {page.posts.map(post => {
-                const locked = !!post.tierId && !isOwner;
+                const locked = !!post.tierId && !isOwner && !allows(member, post.tier);
                 return (
                   <Link key={post.id} href={`/c/${username}/p/${post.id}`} className="card block p-5 hover:border-primary">
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -57,6 +59,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ userna
           </div>
           <aside className="space-y-4">
             <h2 className="text-xl font-bold">{t("page.membership")}</h2>
+            {member && <p role="status" className="rounded-xl border border-secondary p-3 text-sm text-secondary"><b>You are a member</b> ({member.tier.name}) until {member.expiresAt.toLocaleDateString()}.</p>}
             {page.tiers.length === 0 && <p className="text-sm text-muted-foreground">No memberships yet.</p>}
             {page.tiers.map(tier => (
               <div key={tier.id} className="card p-5">
@@ -64,9 +67,10 @@ export default async function CreatorPage({ params }: { params: Promise<{ userna
                 <div className="text-2xl font-bold">{money(tier.priceMinor, tier.currency)} <span className="text-sm font-normal text-muted-foreground">{t("page.period")}</span></div>
                 <p className="mt-1 text-sm text-muted-foreground">{tier.description}</p>
                 <ul className="mt-2 list-disc pl-5 text-sm">{tier.benefits.map(b => <li key={b}>{b}</li>)}</ul>
-                <button className="btn mt-4 w-full" disabled>{t("page.soon")}</button>
+                {isOwner ? <p className="mt-4 text-sm text-muted-foreground">This is your page.</p> :
+                  <Link href={`/c/${username}/join/${tier.id}`} className="btn mt-4 w-full">{member?.tierId === tier.id ? "Renew" : member ? "Switch to this tier" : "Join"}</Link>}
               </div>))}
-            <button className="btn-outline w-full" disabled>{t("page.tip")}</button>
+            {!isOwner && page.status === "ACTIVE" && <Link href={`/c/${username}/tip`} className="btn-outline w-full">{t("page.tip")}</Link>}
           </aside>
         </div>
       </div>
