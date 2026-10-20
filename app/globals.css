@@ -19,4 +19,11 @@
   .btn-outline { @apply btn border border-primary bg-transparent text-link hover:bg-muted; }
   .input { @apply w-full rounded-xl border border-border bg-card px-3 py-2.5 placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30; }
   .card { @apply rounded-2xl border border-border bg-card; }
+  .prose-zupport h2 { @apply mb-2 mt-6 text-2xl font-bold; }
+  .prose-zupport h3 { @apply mb-2 mt-5 text-xl font-semibold; }
+  .prose-zupport p { @apply my-3 leading-relaxed; }
+  .prose-zupport ul { @apply my-3 list-disc pl-6; }
+  .prose-zupport ol { @apply my-3 list-decimal pl-6; }
+  .prose-zupport blockquote { @apply my-3 border-l-4 border-border pl-4 text-muted-foreground; }
+  .prose-zupport a { @apply text-link underline; }
 }

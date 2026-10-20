@@ -17,7 +17,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
       {sp.error && <Alert kind="error">{sp.error}</Alert>}
       {sp.verified && <Alert kind="ok">Your email is verified.</Alert>}
       {sp.sent && <Alert kind="ok">Verification link sent. In development it appears in the terminal.</Alert>}
-      {sp.created && <Alert kind="ok">Draft page created. Publish it when you are ready.</Alert>}
+      {sp.created && <Alert kind="ok">Draft page created. Click Manage to set it up, then publish.</Alert>}
       {sp.published && <Alert kind="ok">Your page is live.</Alert>}
 
       <section className="card p-6">
@@ -35,11 +35,13 @@ export default async function Account({ searchParams }: { searchParams: Promise<
         {pages.length === 0 && <p className="mt-4 text-muted-foreground">You have no pages yet. Start one to receive support.</p>}
         <div className="mt-4 space-y-3">
           {pages.map(p => (
-            <div key={p.id} className="card flex items-center justify-between gap-4 p-4">
+            <div key={p.id} className="card flex flex-wrap items-center justify-between gap-3 p-4">
               <div><div className="font-semibold">{p.displayName}</div>
                 <div className="text-sm text-muted-foreground">/c/{p.username} · {p.status === "ACTIVE" ? "Published" : p.status === "DRAFT" ? "Draft" : "Suspended"}</div></div>
-              {p.status === "ACTIVE" && <Link href={`/c/${p.username}`} className="btn-outline">View</Link>}
-              {p.status === "DRAFT" && <form action={publishPage.bind(null, p.id)}><button className="btn">Publish</button></form>}
+              <div className="flex gap-2">
+                <Link href={`/manage/${p.username}`} className="btn-outline">Manage</Link>
+                {p.status === "DRAFT" && <form action={publishPage.bind(null, p.id)}><button className="btn">Publish</button></form>}
+              </div>
             </div>))}
         </div>
       </section>
