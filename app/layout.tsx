@@ -5,6 +5,8 @@ import { Inter, Noto_Sans_Ethiopic } from "next/font/google";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getLocale, getT } from "@/lib/i18n";
+import { currentUser } from "@/lib/session";
+import { logout } from "./actions/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const ethiopic = Noto_Sans_Ethiopic({ subsets: ["ethiopic"], variable: "--font-ethiopic" });
@@ -17,18 +19,24 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const dark = (await cookies()).get("theme")?.value === "dark";
   const t = await getT();
+  const user = await currentUser();
   return (
     <html lang={await getLocale()} className={`${inter.variable} ${ethiopic.variable} ${dark ? "dark" : ""}`}>
       <body className="font-sans">
         <header className="border-b border-border bg-card">
           <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3" aria-label="Main">
-            <Link href="/" aria-label="Zupport home">
-              <Logo size={44} />
-            </Link>
-            <div className="flex items-center gap-5 text-sm font-medium">
+            <Link href="/" aria-label="Zupport home"><Logo size={44} /></Link>
+            <div className="flex items-center gap-4 text-sm font-medium">
               <Link href="/explore">{t("nav.explore")}</Link>
               <Link href="/#how" className="hidden sm:inline">{t("nav.how")}</Link>
               <Link href="/#faq" className="hidden sm:inline">{t("nav.faq")}</Link>
+              {user ? (<>
+                <Link href="/account">Account</Link>
+                <form action={logout}><button className="text-muted-foreground hover:text-foreground">Log out</button></form>
+              </>) : (<>
+                <Link href="/login">Log in</Link>
+                <Link href="/signup" className="btn !py-1.5">Sign up</Link>
+              </>)}
               <ThemeToggle />
             </div>
           </nav>
