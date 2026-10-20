@@ -16,7 +16,7 @@ export default async function PostPage({ params }: { params: Promise<{ username:
   const post = await db.post.findFirst({ where: { id, pageId: page.id }, include: { tier: true } });
   if (!post || (!post.published && !isOwner)) notFound();
   const member = user ? await getMembership(user.id, page.id) : null;
-  const locked = !!post.tierId && !isOwner && !allows(member, post.tier); // the body is never rendered when locked
+  const locked = !!post.tierId && !isOwner && !allows(member, post.tier);
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
       <Link href={`/c/${username}`} className="text-sm font-medium text-link">← {page.displayName}</Link>
@@ -34,6 +34,7 @@ export default async function PostPage({ params }: { params: Promise<{ username:
           ? <p className="mt-4 whitespace-pre-line">{post.body}</p>
           : <div className="prose-zupport mt-6" dangerouslySetInnerHTML={{ __html: post.body }} />}
       </>)}
+      {!isOwner && <p className="mt-10"><Link href={`/report?post=${post.id}`} className="text-sm text-muted-foreground underline">Report this post</Link></p>}
     </article>
   );
 }

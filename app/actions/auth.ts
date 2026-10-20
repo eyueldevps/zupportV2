@@ -4,11 +4,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { appUrl, sendEmail } from "@/lib/email";
+import { allow, clientIp } from "@/lib/ratelimit";
 import { createSession, currentUser, destroySession } from "@/lib/session";
 import { consumeToken, createToken } from "@/lib/tokens";
 
 const q = encodeURIComponent;
 const password = z.string().min(8, "Password needs at least 8 characters").max(100);
+const TOO_MANY = "Too many attempts. Please wait a few minutes and try again.";
 
 async function sendVerification(user: { id: string; email: string }) {
   const token = await createToken(user.id, "VERIFY_EMAIL", 60 * 24);
@@ -16,6 +18,7 @@ async function sendVerification(user: { id: string; email: string }) {
 }
 
 export async function signup(fd: FormData) {
+  if (!(await allow(`signup:${await clientIp()}`, 5, 3600))) redirect(`/signup?error=${q(TOO_MANY)}`);
   const p = z.object({
     name: z.string().trim().min(2, "Enter your name").max(80),
     email: z.string().trim().toLowerCase().email("Enter a valid email address"),
@@ -31,6 +34,7 @@ export async function signup(fd: FormData) {
 
 export async function login(fd: FormData) {
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
+  if (!(await allow(`login:${await clientIp()}:${email}`, 8, 900))) redirect(`/login?error=${q(TOO_MANY)}`);
   const user = await db.user.findUnique({ where: { email } });
   const ok = user ? await compare(String(fd.get("password") ?? ""), user.passwordHash) : false;
   if (!user || !ok) redirect(`/login?error=${q("Wrong email or password")}`);
@@ -42,16 +46,18 @@ export async function logout() { await destroySession(); redirect("/"); }
 
 export async function resendVerification() {
   const user = await currentUser();
-  if (user && !user.emailVerifiedAt) await sendVerification(user);
+  if (user && !user.emailVerifiedAt && (await allow(`resend:${user.id}`, 5, 3600))) await sendVerification(user);
   redirect("/account?sent=1");
 }
 
 export async function forgotPassword(fd: FormData) {
   const email = String(fd.get("email") ?? "").trim().toLowerCase();
-  const user = await db.user.findUnique({ where: { email } });
-  if (user) {
-    const token = await createToken(user.id, "RESET_PASSWORD", 60);
-    await sendEmail(user.email, "Reset your Zupport password", `Open this link to choose a new password (valid 1 hour):\n${appUrl()}/reset-password?token=${token}`);
+  if (await allow(`forgot:${await clientIp()}`, 5, 3600)) {
+    const user = await db.user.findUnique({ where: { email } });
+    if (user) {
+      const token = await createToken(user.id, "RESET_PASSWORD", 60);
+      await sendEmail(user.email, "Reset your Zupport password", `Open this link to choose a new password (valid 1 hour):\n${appUrl()}/reset-password?token=${token}`);
+    }
   }
   redirect("/forgot-password?sent=1"); // same answer whether or not the email exists
 }

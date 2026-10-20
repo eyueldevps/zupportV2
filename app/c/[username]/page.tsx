@@ -22,7 +22,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ userna
   const links = Object.entries((page.links ?? {}) as Record<string, string>).filter(([, v]) => v);
   return (
     <div>
-      {page.status !== "ACTIVE" && <div className="bg-accent/20 px-4 py-2 text-center text-sm font-medium">Draft preview. Only you can see this page.</div>}
+      {page.status !== "ACTIVE" && <div className="bg-accent/20 px-4 py-2 text-center text-sm font-medium">{page.status === "SUSPENDED" ? "This page is suspended. Only you can see it." : "Draft preview. Only you can see this page."}</div>}
       <div className="h-40 bg-gradient-to-r from-primary to-blue-400 sm:h-56" aria-hidden />
       <div className="mx-auto max-w-6xl px-4">
         <div className="-mt-10 flex items-end gap-4">
@@ -71,6 +71,7 @@ export default async function CreatorPage({ params }: { params: Promise<{ userna
                   <Link href={`/c/${username}/join/${tier.id}`} className="btn mt-4 w-full">{member?.tierId === tier.id ? "Renew" : member ? "Switch to this tier" : "Join"}</Link>}
               </div>))}
             {!isOwner && page.status === "ACTIVE" && <Link href={`/c/${username}/tip`} className="btn-outline w-full">{t("page.tip")}</Link>}
+            {!isOwner && <Link href={`/report?page=${page.id}`} className="block text-center text-sm text-muted-foreground underline">Report this page</Link>}
           </aside>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { FEE_BPS, detectImage, newReference, split } from "@/lib/payments";
+import { allow } from "@/lib/ratelimit";
 import { requireUser } from "@/lib/session";
 
 const q = encodeURIComponent;
@@ -15,12 +16,12 @@ export async function submitPayment(fd: FormData) {
   const back = tierRaw ? `/c/${page.username}/join/${tierRaw}` : `/c/${page.username}/tip`;
   function fail(m: string): never { redirect(`${back}?error=${q(m)}`); }
 
+  if (!(await allow(`pay:${user.id}`, 10, 3600))) fail("Too many submissions. Please wait a while and try again.");
   if (page.ownerId === user.id) fail("You can't pay your own page");
   let gross: number;
   let tierId: string | null = null;
   let purpose: "MEMBERSHIP" | "TIP";
   if (tierRaw) {
-    // The price always comes from the database, never from the form.
     const tier = await db.tier.findFirst({ where: { id: tierRaw, pageId: page.id, active: true } });
     if (!tier) redirect(`/c/${page.username}`);
     gross = tier.priceMinor; tierId = tier.id; purpose = "MEMBERSHIP";

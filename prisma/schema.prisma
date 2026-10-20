@@ -309,3 +309,15 @@ model PaymentProof {
   data      Bytes
   createdAt DateTime @default(now())
 }
+model VerificationFile {
+  id        String   @id @default(cuid())
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+}
+
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}
